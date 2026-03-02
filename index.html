@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1f17">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Smart Snacks — Vote for Your Favorites</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --bg-base: #0f1f17;
+      --bg-surface: #152a1e;
+      --bg-elevated: #1a3525;
+      --bg-hover: #1f4030;
+      --border-subtle: rgba(245, 240, 230, 0.06);
+      --border-medium: rgba(245, 240, 230, 0.12);
+      --accent: #4aba6a;
+      --accent-glow: rgba(74, 186, 106, 0.2);
+      --accent-soft: rgba(74, 186, 106, 0.1);
+      --secondary: #e8a832;
+      --secondary-soft: rgba(232, 168, 50, 0.1);
+      --text-primary: #f5f0e6;
+      --text-secondary: #a8a090;
+      --text-muted: #6b6358;
+      --success: #4aba6a;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(72px + var(--safe-bottom));
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      text-align: center;
+      padding: calc(16px + var(--safe-top)) 16px 12px;
+      background: rgba(15, 31, 23, 0.88);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0.5;
+      border-radius: 1px;
+    }
+
+    .header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text-primary);
+    }
+
+    .header p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      letter-spacing: 0.3px;
+    }
+
+    .back-btn {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      color: var(--accent);
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+
+    .back-btn:active { background: var(--bg-hover); }
+    .back-btn.visible { display: flex; }
+
+    /* ===== SEARCH ===== */
+    .search-wrap {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 14px 16px 0;
+    }
+
+    .search-inner {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      width: 17px;
+      height: 17px;
+      color: var(--text-muted);
+      pointer-events: none;
+      transition: color 0.15s ease;
+    }
+
+    .search-input:focus ~ .search-icon,
+    .search-input:not(:placeholder-shown) ~ .search-icon {
+      color: var(--accent);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 42px 12px 40px;
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .search-input::placeholder { color: var(--text-muted); font-weight: 400; }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      background: var(--bg-elevated);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 16px;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-clear.visible { display: flex; }
+
+    /* ===== SEARCH RESULTS ===== */
+    .search-results {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 10px 16px 4px;
+      display: none;
+    }
+
+    .search-results.active { display: block; }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .search-result-item:active { background: var(--bg-elevated); }
+
+    .search-result-item .result-img {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .search-result-item .result-placeholder {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    .search-result-info { flex: 1; min-width: 0; }
+
+    .search-result-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .search-result-name mark {
+      background: none;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .search-result-cat {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .search-result-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .search-result-votes {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .search-result-check {
+      width: 24px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .search-result-check svg { width: 13px; height: 13px; color: #000; }
+
+    /* ===== VIEWS ===== */
+    .view { display: none; }
+    .view.active { display: block; }
+    .slide-in { animation: slideIn 0.3s var(--ease-out); }
+    .slide-out { animation: slideOut 0.3s var(--ease-out); }
+
+    @keyframes slideIn {
+      from { transform: translateX(50px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(-50px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ===== CATEGORY GRID ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 14px 16px 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cat-card {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 14px 22px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.15s ease, border-color 0.2s ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .cat-card:active { transform: scale(0.97); }
+
+    .cat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 20%;
+      right: 20%;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 0 0 4px 4px;
+      opacity: 0.7;
+    }
+
+    .cat-card-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 19px;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .cat-card-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .cat-card-votes {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cat-card.animate-in { animation: fadeUp 0.4s var(--ease-out) both; }
+    .cat-card.animate-in:nth-child(1) { animation-delay: 0.05s; }
+    .cat-card.animate-in:nth-child(2) { animation-delay: 0.1s; }
+    .cat-card.animate-in:nth-child(3) { animation-delay: 0.15s; }
+    .cat-card.animate-in:nth-child(4) { animation-delay: 0.2s; }
+    .cat-card.animate-in:nth-child(5) { animation-delay: 0.25s; }
+    .cat-card.animate-in:nth-child(6) { animation-delay: 0.3s; }
+
+    /* ===== PRODUCT GRID ===== */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 14px 16px 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .product-card {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--bg-surface);
+      border: 2px solid var(--border-subtle);
+      transition: transform 0.15s ease, border-color 0.2s ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .product-card:active { transform: scale(0.97); }
+
+    .product-card.voted {
+      border-color: var(--accent);
+    }
+
+    .product-card .card-img-wrap {
+      position: relative;
+      overflow: hidden;
+      height: 120px;
+    }
+
+    .product-card .card-img-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(15, 31, 23, 0.5) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-card .img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 36px;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+    }
+
+    .product-card .card-info {
+      padding: 8px 10px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .product-card .card-name {
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .vote-badge {
+      flex-shrink: 0;
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      min-width: 26px;
+      text-align: center;
+    }
+
+    .product-card.voted .vote-badge {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .voted-check {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 26px;
+      height: 26px;
+      background: var(--accent);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      animation: popIn 0.25s var(--ease-snap);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .voted-check svg { width: 14px; height: 14px; color: #000; stroke-width: 3; }
+
+    @keyframes popIn {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== PODIUM ===== */
+    .podium-section {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 18px 16px 6px;
+    }
+
+    .podium-header {
+      font-family: 'DM Serif Display', serif;
+      font-size: 17px;
+      color: var(--secondary);
+      text-align: center;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .podium {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .podium-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 10px 12px;
+      flex: 1;
+      max-width: 140px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .podium-slot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .podium-slot.first {
+      min-height: 180px;
+      border-color: rgba(232, 168, 50, 0.45);
+    }
+    .podium-slot.first::before { background: #e8a832; }
+
+    .podium-slot.second {
+      min-height: 150px;
+      border-color: rgba(200, 200, 200, 0.35);
+    }
+    .podium-slot.second::before { background: #c8c8c8; }
+
+    .podium-slot.third {
+      min-height: 130px;
+      border-color: rgba(205, 127, 50, 0.4);
+    }
+    .podium-slot.third::before { background: #cd7f32; }
+
+    .podium-rank {
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #000;
+      margin-bottom: 8px;
+    }
+
+    .podium-slot.first .podium-rank { background: #e8a832; }
+    .podium-slot.second .podium-rank { background: #c8c8c8; }
+    .podium-slot.third .podium-rank { background: #cd7f32; }
+
+    .podium-img {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-full);
+      object-fit: cover;
+      border: 2px solid var(--border-medium);
+      margin-bottom: 8px;
+      background: var(--bg-elevated);
+    }
+
+    .podium-slot.first .podium-img { border-color: rgba(232, 168, 50, 0.75); }
+    .podium-slot.second .podium-img { border-color: rgba(200, 200, 200, 0.65); }
+    .podium-slot.third .podium-img { border-color: rgba(205, 127, 50, 0.65); }
+
+    .podium-img-placeholder {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      border: 2px solid var(--border-medium);
+      margin-bottom: 8px;
+    }
+
+    .podium-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      line-height: 1.3;
+    }
+
+    .podium-votes {
+      font-size: 15px;
+      line-height: 1.2;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .podium-slot.first .podium-votes { color: #e8a832; }
+    .podium-slot.second .podium-votes { color: #d0d0d0; }
+    .podium-slot.third .podium-votes { color: #cd7f32; }
+
+    .podium-link {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .podium-link:active { opacity: 0.7; }
+
+    .podium-empty {
+      text-align: center;
+      padding: 20px 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+    }
+
+    .podium-empty-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ===== BOTTOM BAR (Leaderboard Teaser) ===== */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(15, 31, 23, 0.92);
+      backdrop-filter: blur(24px) saturate(1.5);
+      -webkit-backdrop-filter: blur(24px) saturate(1.5);
+      border-top: 1px solid var(--border-medium);
+      padding: 0 0 var(--safe-bottom);
+    }
+
+    .bottom-inner {
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .bottom-inner:active { background: rgba(255,255,255,0.03); }
+
+    .leader-rank-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--secondary);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #000;
+    }
+
+    .leader-rank-icon svg { stroke-width: 2.5; }
+
+    .leader-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .leader-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .leader-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .leader-arrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.3px;
+    }
+
+    .leader-empty {
+      flex: 1;
+      text-align: center;
+    }
+
+    .leader-empty-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ===== LEADERBOARD OVERLAY ===== */
+    .overlay-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .overlay-bg.active { opacity: 1; pointer-events: auto; }
+
+    .leader-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-elevated);
+      border-radius: 20px 20px 0 0;
+      z-index: 51;
+      transform: translateY(100%);
+      transition: transform 0.35s var(--ease-out);
+      max-height: 85vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px 0 calc(24px + var(--safe-bottom));
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+    }
+
+    .leader-sheet.active { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: rgba(245, 240, 230, 0.12);
+      border-radius: 2px;
+      margin: 4px auto 16px;
+    }
+
+    .sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      margin-bottom: 16px;
+    }
+
+    .sheet-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+
+    .sheet-close {
+      background: rgba(245, 240, 230, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .leader-list { padding: 0 16px; }
+
+    .leader-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .leader-row:last-child { border-bottom: none; }
+
+    .leader-row-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      color: var(--text-muted);
+    }
+
+    .leader-row-rank.gold { background: #e8a832; color: #000; }
+    .leader-row-rank.silver { background: #a8a8a8; color: #000; }
+    .leader-row-rank.bronze { background: #cd7f32; color: #000; }
+
+    .leader-row-info { flex: 1; min-width: 0; }
+
+    .leader-row-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .leader-row-cat {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-weight: 500;
+    }
+
+    .leader-row-count {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .leader-empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #000;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 700;
+      transition: bottom 0.4s var(--ease-out);
+      z-index: 200;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(74, 186, 106, 0.25);
+      letter-spacing: 0.3px;
+    }
+
+    .toast.show { bottom: calc(90px + var(--safe-bottom)); }
+
+    /* ===== FOCUS VISIBLE ===== */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    button:focus:not(:focus-visible),
+    input:focus:not(:focus-visible) { outline: none; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <button class="back-btn" id="backBtn" aria-label="Go back" onclick="showCategories()">&#8592;</button>
+    <h1 id="headerTitle">Smart Snacks</h1>
+    <p id="headerSub">Vote for what you want in the machine</p>
+  </header>
+
+  <!-- Category View -->
+  <div class="view active" id="categoryView">
+    <div class="search-wrap">
+      <div class="search-inner">
+        <input class="search-input" id="searchInput" type="text" placeholder="Search products..." autocomplete="off" aria-label="Search products">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <button class="search-clear" id="searchClear" aria-label="Clear search">&times;</button>
+      </div>
+    </div>
+    <div class="search-results" id="searchResults" role="listbox"></div>
+    <div class="podium-section" id="podiumSection">
+      <div class="podium-header">Top Ranked</div>
+      <div id="podiumContent"></div>
+    </div>
+    <div class="grid" id="catGrid"></div>
+  </div>
+
+  <!-- Product View -->
+  <div class="view" id="productView">
+    <div class="product-grid" id="productGrid"></div>
+  </div>
+
+  <!-- Bottom bar: compact rankings link -->
+  <div class="bottom-bar">
+    <div class="bottom-inner" id="leaderTeaser">
+      <div class="leader-rank-icon" id="leaderIcon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+      </div>
+      <div class="leader-info" id="leaderInfo">
+        <div class="leader-name" id="leaderName">See Rankings</div>
+        <div class="leader-subtitle" id="leaderSubtitle">View all product rankings</div>
+      </div>
+      <span class="leader-arrow" id="leaderArrow">Rankings &#8250;</span>
+    </div>
+  </div>
+
+  <!-- Leaderboard overlay -->
+  <div class="overlay-bg" id="overlayBg"></div>
+  <div class="leader-sheet" id="leaderSheet" role="dialog" aria-label="Rankings">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2>Rankings</h2>
+      <button class="sheet-close" id="leaderClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="leader-list" id="leaderList"></div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ============================================================
+    // CONFIG — Replace with your Supabase project credentials
+    // ============================================================
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+    // ============================================================
+    // PRODUCT DATA — Sam's Club verified, vending-appropriate sizes
+    // ============================================================
+    const CATEGORIES = {
+      sodas:   { name: 'Sodas',                order: 0 },
+      energy:  { name: 'Energy & Sports',      order: 1 },
+      water:   { name: 'Water & Tea',          order: 2 },
+      chips:   { name: 'Chips & Crunchy',      order: 3 },
+      candy:   { name: 'Candy & Chocolate',    order: 4 },
+      cookies: { name: 'Cookies, Bars & Nuts', order: 5 },
+    };
+
+    const PRODUCTS = [
+      // ── Sodas ──
+      { id: 'coca-cola',         name: 'Coca-Cola',         category: 'sodas', img: 'images/brands/sodas/coca-cola.jpg' },
+      { id: 'coke-zero',         name: 'Coke Zero',         category: 'sodas', img: 'images/brands/sodas/coke-zero.jpg' },
+      { id: 'diet-coke',         name: 'Diet Coke',         category: 'sodas', img: 'images/brands/sodas/diet-coke.jpg' },
+      { id: 'sprite',            name: 'Sprite',            category: 'sodas', img: 'images/brands/sodas/sprite.jpg' },
+      { id: 'sprite-zero',       name: 'Sprite Zero',       category: 'sodas', img: 'images/brands/sodas/sprite-zero.jpg' },
+      { id: 'pepsi',             name: 'Pepsi',             category: 'sodas', img: 'images/brands/sodas/pepsi.jpg' },
+      { id: 'pepsi-zero',        name: 'Pepsi Zero',        category: 'sodas', img: 'images/brands/sodas/pepsi-zero.jpg' },
+      { id: 'diet-pepsi',        name: 'Diet Pepsi',        category: 'sodas', img: 'images/brands/sodas/diet-pepsi.jpg' },
+      { id: 'dr-pepper',         name: 'Dr Pepper',         category: 'sodas', img: 'images/brands/sodas/dr-pepper.jpg' },
+      { id: 'diet-dr-pepper',    name: 'Diet Dr Pepper',    category: 'sodas', img: 'images/brands/sodas/diet-dr-pepper.jpg' },
+      { id: 'dr-pepper-zero',    name: 'Dr Pepper Zero',    category: 'sodas', img: 'images/brands/sodas/dr-pepper-zero.jpg' },
+      { id: 'mountain-dew',      name: 'Mountain Dew',      category: 'sodas', img: 'images/brands/sodas/mountain-dew.jpg' },
+      { id: 'diet-mtn-dew',      name: 'Diet Mtn Dew',      category: 'sodas', img: 'images/brands/sodas/diet-mtn-dew.jpg' },
+      { id: 'aw-root-beer',      name: 'A&W Root Beer',     category: 'sodas', img: 'images/brands/sodas/aw-root-beer.jpg' },
+      { id: 'canada-dry',        name: 'Canada Dry',        category: 'sodas', img: 'images/brands/sodas/canada-dry.jpg' },
+      { id: 'fanta',             name: 'Fanta Orange',      category: 'sodas', img: 'images/brands/sodas/fanta.jpg' },
+      { id: 'olipop',            name: 'Olipop',            category: 'sodas', img: 'images/brands/sodas/olipop.jpg' },
+
+      // ── Energy & Sports ──
+      { id: 'monster-original',    name: 'Monster Original',    category: 'energy', img: 'images/brands/energy/monster-original.jpg' },
+      { id: 'monster-zero-ultra',  name: 'Monster Zero Ultra',  category: 'energy', img: 'images/brands/energy/monster-zero-ultra.jpg' },
+      { id: 'monster-lo-carb',     name: 'Monster Lo-Carb',     category: 'energy', img: 'images/brands/energy/monster-lo-carb.jpg' },
+      { id: 'monster-zero-sugar',  name: 'Monster Zero Sugar',  category: 'energy', img: 'images/brands/energy/monster-zero-sugar.jpg' },
+      { id: 'redbull',             name: 'Red Bull',            category: 'energy', img: 'images/brands/energy/redbull.jpg' },
+      { id: 'redbull-sugar-free',  name: 'Red Bull Sugar-Free', category: 'energy', img: 'images/brands/energy/redbull-sugar-free.jpg' },
+      { id: 'celsius-kiwi-guava',  name: 'Celsius Kiwi Guava', category: 'energy', img: 'images/brands/energy/celsius-kiwi-guava.jpg' },
+      { id: 'celsius-orange',      name: 'Celsius Orange',      category: 'energy', img: 'images/brands/energy/celsius-orange.jpg' },
+      { id: 'celsius-watermelon',  name: 'Celsius Watermelon',  category: 'energy', img: 'images/brands/energy/celsius-watermelon.jpg' },
+      { id: 'celsius-peach-vibe',  name: 'Celsius Peach Vibe',  category: 'energy', img: 'images/brands/energy/celsius-peach-vibe.jpg' },
+      { id: 'celsius-tropical-vibe', name: 'Celsius Tropical Vibe', category: 'energy', img: 'images/brands/energy/celsius-tropical-vibe.jpg' },
+      { id: 'celsius-retro-vibe',  name: 'Celsius Retro Vibe',  category: 'energy', img: 'images/brands/energy/celsius-retro-vibe.jpg' },
+      { id: 'alani-nu',            name: 'Alani Nu',            category: 'energy', img: 'images/brands/energy/alani-nu.jpg' },
+      { id: 'nos',                 name: 'NOS',                 category: 'energy', img: 'images/brands/energy/nos.jpg' },
+      { id: 'gatorade-lemon-lime', name: 'Gatorade Lemon Lime', category: 'energy', img: 'images/brands/energy/gatorade-lemon-lime.jpg' },
+      { id: 'gatorade-orange',     name: 'Gatorade Orange',     category: 'energy', img: 'images/brands/energy/gatorade-orange.jpg' },
+      { id: 'gatorade-fruit-punch',name: 'Gatorade Fruit Punch',category: 'energy', img: 'images/brands/energy/gatorade-fruit-punch.jpg' },
+      { id: 'gatorade-glacier-freeze', name: 'Gatorade Glacier Freeze', category: 'energy', img: 'images/brands/energy/gatorade-glacier-freeze.jpg' },
+      { id: 'gatorade-zero',       name: 'Gatorade Zero',       category: 'energy', img: 'images/brands/energy/gatorade-zero.jpg' },
+      { id: 'powerade',            name: 'Powerade',            category: 'energy', img: 'images/brands/energy/powerade.jpg' },
+      { id: 'bodyarmor',           name: 'BodyArmor',           category: 'energy', img: 'images/brands/energy/bodyarmor.jpg' },
+
+      // ── Water & Tea ──
+      { id: 'aquafina',          name: 'Aquafina',             category: 'water', img: 'images/brands/water/aquafina.jpg' },
+      { id: 'dasani',            name: 'Dasani',               category: 'water', img: 'images/brands/water/dasani.jpg' },
+
+      { id: 'lacroix',           name: 'LaCroix',              category: 'water', img: 'images/brands/water/lacroix.jpg' },
+      { id: 'bubly',             name: 'Bubly',                category: 'water', img: 'images/brands/water/bubly.jpg' },
+      { id: 'perrier',           name: 'Perrier',              category: 'water', img: 'images/brands/water/perrier.jpg' },
+      { id: 'arizona-green-tea', name: 'Arizona Green Tea',    category: 'water', img: 'images/brands/water/arizona-green-tea.jpg' },
+
+      // ── Chips & Crunchy ──
+      { id: 'lays-classic',       name: "Lay's Classic",            category: 'chips', img: 'images/brands/chips/lays-classic.jpg' },
+      { id: 'lays-bbq',           name: "Lay's BBQ",               category: 'chips', img: 'images/brands/chips/lays-bbq.jpg' },
+      { id: 'lays-sour-cream',    name: "Lay's Sour Cream & Onion",category: 'chips', img: 'images/brands/chips/lays-sour-cream.jpg' },
+      { id: 'doritos-nacho',      name: 'Doritos Nacho Cheese',    category: 'chips', img: 'images/brands/chips/doritos-nacho.jpg' },
+      { id: 'doritos-cool-ranch', name: 'Doritos Cool Ranch',      category: 'chips', img: 'images/brands/chips/doritos-cool-ranch.jpg' },
+      { id: 'cheetos-crunchy',    name: 'Cheetos Crunchy',         category: 'chips', img: 'images/brands/chips/cheetos-crunchy.jpg' },
+      { id: 'cheetos-flamin-hot', name: "Cheetos Flamin' Hot",     category: 'chips', img: 'images/brands/chips/cheetos-flamin-hot.jpg' },
+      { id: 'cheetos-puffs',      name: 'Cheetos Puffs',           category: 'chips', img: 'images/brands/chips/cheetos-puffs.jpg' },
+      { id: 'fritos',             name: 'Fritos',                  category: 'chips', img: 'images/brands/chips/fritos.jpg' },
+      { id: 'ruffles',            name: 'Ruffles',                 category: 'chips', img: 'images/brands/chips/ruffles.jpg' },
+      { id: 'takis-fuego',        name: 'Takis Fuego',             category: 'chips', img: 'images/brands/chips/takis-fuego.jpg' },
+      { id: 'sunchips',           name: 'SunChips',                category: 'chips', img: 'images/brands/chips/sunchips.jpg' },
+      { id: 'veggie-straws',      name: 'Veggie Straws',           category: 'chips', img: 'images/brands/chips/veggie-straws.jpg' },
+
+      // ── Candy & Chocolate ──
+      { id: 'snickers',            name: 'Snickers',                category: 'candy', img: 'images/brands/candy/snickers.jpg' },
+      { id: 'reeses',              name: "Reese's",                 category: 'candy', img: 'images/brands/candy/reeses.jpg' },
+      { id: 'kitkat',              name: 'KitKat',                  category: 'candy', img: 'images/brands/candy/kitkat.jpg' },
+      { id: 'twix',                name: 'Twix',                    category: 'candy', img: 'images/brands/candy/twix.jpg' },
+      { id: 'butterfinger',        name: 'Butterfinger',            category: 'candy', img: 'images/brands/candy/butterfinger.jpg' },
+      { id: 'milky-way',           name: 'Milky Way',               category: 'candy', img: 'images/brands/candy/milky-way.jpg' },
+      { id: '3-musketeers',        name: '3 Musketeers',            category: 'candy', img: 'images/brands/candy/3-musketeers.jpg' },
+      { id: 'mms-milk',            name: "M&M's Milk Chocolate",    category: 'candy', img: 'images/brands/candy/mms-milk.jpg' },
+      { id: 'mms-peanut',          name: "M&M's Peanut",            category: 'candy', img: 'images/brands/candy/mms-peanut.jpg' },
+      { id: 'skittles',            name: 'Skittles',                category: 'candy', img: 'images/brands/candy/skittles.jpg' },
+      { id: 'hersheys-milk',       name: "Hershey's Milk Chocolate",category: 'candy', img: 'images/brands/candy/hersheys-milk.jpg' },
+      { id: 'hersheys-cookies',    name: "Hershey's Cookies 'n' Creme", category: 'candy', img: 'images/brands/candy/hersheys-cookies.jpg' },
+      { id: 'hersheys-almonds',    name: "Hershey's Almonds",       category: 'candy', img: 'images/brands/candy/hersheys-almonds.jpg' },
+
+      // ── Cookies, Bars & Nuts ──
+      { id: 'oreos',              name: 'Oreos',                    category: 'cookies', img: 'images/brands/cookies/oreos.jpg' },
+      { id: 'oreos-golden',       name: 'Golden Oreos',             category: 'cookies', img: 'images/brands/cookies/oreos-golden.jpg' },
+      { id: 'chips-ahoy',         name: 'Chips Ahoy',              category: 'cookies', img: 'images/brands/cookies/chips-ahoy.jpg' },
+      { id: 'famous-amos',        name: 'Famous Amos',             category: 'cookies', img: 'images/brands/cookies/famous-amos.jpg' },
+      { id: 'planters-cashews',    name: 'Planters Cashews',        category: 'cookies', img: 'images/brands/cookies/planters-cashews.jpg' },
+      { id: 'planters-peanuts',    name: 'Planters Peanuts',        category: 'cookies', img: 'images/brands/cookies/planters-peanuts.jpg' },
+      { id: 'planters-honey',      name: 'Planters Honey Roasted',  category: 'cookies', img: 'images/brands/cookies/planters-honey.jpg' },
+      { id: 'nature-valley-oats',  name: "Nature Valley Oats 'n Honey", category: 'cookies', img: 'images/brands/cookies/nature-valley-oats.jpg' },
+      { id: 'nature-valley-sweet', name: 'Nature Valley Sweet & Salty',  category: 'cookies', img: 'images/brands/cookies/nature-valley-sweet.jpg' },
+      { id: 'nature-valley-pb',    name: 'Nature Valley PB Dark Choc',   category: 'cookies', img: 'images/brands/cookies/nature-valley-pb.jpg' },
+      { id: 'kind-bar',            name: 'KIND Bar',                category: 'cookies', img: 'images/brands/cookies/kind-bar.jpg' },
+      { id: 'rxbar',               name: 'RXBAR',                   category: 'cookies', img: 'images/brands/cookies/rxbar.jpg' },
+    ];
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    let supabase = null;
+    let currentCategory = null;
+    let initialRender = true;
+    const voteCounts = new Map();
+    const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+    // ============================================================
+    // DOM REFS
+    // ============================================================
+    const $ = id => document.getElementById(id);
+    const catGrid = $('catGrid');
+    const productGrid = $('productGrid');
+    const categoryView = $('categoryView');
+    const productView = $('productView');
+    const backBtn = $('backBtn');
+    const headerTitle = $('headerTitle');
+    const headerSub = $('headerSub');
+    const searchInput = $('searchInput');
+    const searchClear = $('searchClear');
+    const searchResults = $('searchResults');
+    const overlayBg = $('overlayBg');
+    const leaderSheet = $('leaderSheet');
+    const leaderClose = $('leaderClose');
+    const leaderList = $('leaderList');
+    const leaderTeaser = $('leaderTeaser');
+    const leaderIcon = $('leaderIcon');
+    const leaderInfo = $('leaderInfo');
+    const leaderName = $('leaderName');
+    const leaderSubtitle = $('leaderSubtitle');
+    const leaderArrow = $('leaderArrow');
+    const podiumSection = $('podiumSection');
+    const podiumContent = $('podiumContent');
+    const toastEl = $('toast');
+
+    // ============================================================
+    // DEVICE ID
+    // ============================================================
+    function getDeviceId() {
+      let id = localStorage.getItem('vm_device_id');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('vm_device_id', id);
+      }
+      return id;
+    }
+
+    // ============================================================
+    // VOTED STATE (localStorage)
+    // ============================================================
+    function getVotedSet() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem('vm_voted') || '[]'));
+      } catch { return new Set(); }
+    }
+
+    function hasVoted(productId) {
+      return getVotedSet().has(productId);
+    }
+
+    function markVoted(productId) {
+      const set = getVotedSet();
+      set.add(productId);
+      localStorage.setItem('vm_voted', JSON.stringify([...set]));
+    }
+
+    // ============================================================
+    // SUPABASE INIT
+    // ============================================================
+    function initSupabase() {
+      if (SUPABASE_URL.startsWith('YOUR_') || SUPABASE_ANON_KEY.startsWith('YOUR_')) {
+        console.warn('Supabase not configured — running in offline mode. Votes saved locally only.');
+        return;
+      }
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        fetchVoteCounts();
+        subscribeToVotes();
+      } catch (e) {
+        console.error('Supabase init failed:', e);
+      }
+    }
+
+    async function fetchVoteCounts() {
+      if (!supabase) return;
+      const deviceId = getDeviceId();
+
+      const { data, error } = await supabase
+        .from('votes')
+        .select('product_id, device_id');
+
+      if (error) {
+        console.error('Failed to fetch votes:', error);
+        return;
+      }
+
+      voteCounts.clear();
+      const myVotes = getVotedSet();
+      (data || []).forEach(row => {
+        voteCounts.set(row.product_id, (voteCounts.get(row.product_id) || 0) + 1);
+        if (row.device_id === deviceId) myVotes.add(row.product_id);
+      });
+      localStorage.setItem('vm_voted', JSON.stringify([...myVotes]));
+      renderCurrentView();
+      renderLeaderTeaser();
+    }
+
+    function subscribeToVotes() {
+      if (!supabase) return;
+      supabase
+        .channel('votes-realtime')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, payload => {
+          const pid = payload.new.product_id;
+          voteCounts.set(pid, (voteCounts.get(pid) || 0) + 1);
+          if (payload.new.device_id === getDeviceId()) markVoted(pid);
+          renderCurrentView();
+          renderLeaderTeaser();
+          if (leaderSheet.classList.contains('active')) renderLeaderboard();
+        })
+        .subscribe();
+    }
+
+    // ============================================================
+    // VOTING
+    // ============================================================
+    async function castVote(product) {
+      if (hasVoted(product.id)) return;
+
+      // Optimistic update
+      markVoted(product.id);
+      voteCounts.set(product.id, (voteCounts.get(product.id) || 0) + 1);
+      renderCurrentView();
+      renderLeaderTeaser();
+      showToast('Vote recorded!');
+
+      if (!supabase) return;
+
+      const { error } = await supabase.from('votes').insert({
+        product_id: product.id,
+        product_name: product.name,
+        category: product.category,
+        device_id: getDeviceId(),
+      });
+
+      if (error) {
+        if (error.code === '23505') return; // duplicate — already voted
+        // Revert
+        const set = getVotedSet();
+        set.delete(product.id);
+        localStorage.setItem('vm_voted', JSON.stringify([...set]));
+        voteCounts.set(product.id, Math.max(0, (voteCounts.get(product.id) || 1) - 1));
+        renderCurrentView();
+        renderLeaderTeaser();
+        showToast('Something went wrong. Try again.');
+      }
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function highlightMatch(name, query) {
+      if (!query) return escapeHtml(name);
+      const i = name.toLowerCase().indexOf(query.toLowerCase());
+      if (i === -1) return escapeHtml(name);
+      return escapeHtml(name.slice(0, i)) + '<mark>' + escapeHtml(name.slice(i, i + query.length)) + '</mark>' + escapeHtml(name.slice(i + query.length));
+    }
+
+    function getVoteCount(productId) {
+      return voteCounts.get(productId) || 0;
+    }
+
+    function getCategoryProducts(catKey) {
+      return PRODUCTS.filter(p => p.category === catKey);
+    }
+
+    function getCategoryVotes(catKey) {
+      return getCategoryProducts(catKey).reduce((sum, p) => sum + getVoteCount(p.id), 0);
+    }
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    function productImgHtml(product) {
+      if (product.img) {
+        return `<img src="${product.img}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;img-placeholder&quot;>${escapeHtml(product.name[0])}</div>'">`;
+      }
+      return `<div class="img-placeholder">${escapeHtml(product.name[0])}</div>`;
+    }
+
+    // ============================================================
+    // RENDER: CATEGORIES
+    // ============================================================
+    function renderCategories() {
+      catGrid.innerHTML = '';
+      const sortedKeys = Object.keys(CATEGORIES).sort((a, b) => CATEGORIES[a].order - CATEGORIES[b].order);
+
+      sortedKeys.forEach(key => {
+        const cat = CATEGORIES[key];
+        const products = getCategoryProducts(key);
+        const totalVotes = getCategoryVotes(key);
+
+        const card = document.createElement('div');
+        card.className = 'cat-card' + (initialRender ? ' animate-in' : '');
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.innerHTML = `
+          <div class="cat-card-name">${escapeHtml(cat.name)}</div>
+          <div class="cat-card-count">${products.length} items</div>
+          ${totalVotes > 0 ? `<div class="cat-card-votes">${totalVotes} vote${totalVotes !== 1 ? 's' : ''}</div>` : ''}
+        `;
+        card.addEventListener('click', () => showProducts(key));
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showProducts(key); } });
+        catGrid.appendChild(card);
+      });
+      initialRender = false;
+    }
+
+    // ============================================================
+    // RENDER: PRODUCTS
+    // ============================================================
+    function renderProducts() {
+      if (!currentCategory) return;
+      const products = getCategoryProducts(currentCategory);
+      productGrid.innerHTML = '';
+
+      products.forEach(product => {
+        const voted = hasVoted(product.id);
+        const count = getVoteCount(product.id);
+        const card = document.createElement('div');
+        card.className = 'product-card' + (voted ? ' voted' : '');
+
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.innerHTML = `
+          ${voted ? `<div class="voted-check">${checkSvg}</div>` : ''}
+          <div class="card-img-wrap">${productImgHtml(product)}</div>
+          <div class="card-info">
+            <span class="card-name">${escapeHtml(product.name)}</span>
+            <span class="vote-badge">${count}</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => castVote(product));
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); castVote(product); } });
+        productGrid.appendChild(card);
+      });
+    }
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+    function showProducts(catKey) {
+      currentCategory = catKey;
+      const cat = CATEGORIES[catKey];
+
+      searchInput.value = '';
+      handleSearch();
+
+      headerTitle.textContent = cat.name;
+      headerSub.textContent = 'Tap a product to vote';
+      backBtn.classList.add('visible');
+
+      categoryView.classList.remove('active');
+      productView.classList.add('active');
+      productView.classList.add('slide-in');
+      setTimeout(() => productView.classList.remove('slide-in'), 300);
+
+      renderProducts();
+      window.scrollTo(0, 0);
+    }
+
+    function showCategories() {
+      currentCategory = null;
+
+      headerTitle.textContent = 'Smart Snacks';
+      headerSub.textContent = 'Vote for what you want in the machine';
+      backBtn.classList.remove('visible');
+
+      productView.classList.remove('active');
+      categoryView.classList.add('active');
+      categoryView.classList.add('slide-out');
+      setTimeout(() => categoryView.classList.remove('slide-out'), 300);
+
+      renderCategories();
+      window.scrollTo(0, 0);
+    }
+
+    function renderCurrentView() {
+      if (currentCategory) renderProducts();
+      else renderCategories();
+    }
+
+    // ============================================================
+    // SEARCH
+    // ============================================================
+    function handleSearch() {
+      const q = searchInput.value.trim().toLowerCase();
+      searchClear.classList.toggle('visible', q.length > 0);
+
+      if (q.length === 0) {
+        searchResults.classList.remove('active');
+        catGrid.style.display = '';
+        podiumSection.style.display = '';
+        return;
+      }
+
+      const matches = PRODUCTS.filter(p => p.name.toLowerCase().includes(q));
+      searchResults.innerHTML = '';
+
+      matches.slice(0, 15).forEach(p => {
+        const voted = hasVoted(p.id);
+        const count = getVoteCount(p.id);
+        const cat = CATEGORIES[p.category];
+
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.setAttribute('role', 'option');
+
+        const imgEl = p.img
+          ? `<img class="result-img" src="${p.img}" alt="" loading="lazy">`
+          : `<div class="result-placeholder">${escapeHtml(p.name[0])}</div>`;
+
+        item.innerHTML = `
+          ${imgEl}
+          <div class="search-result-info">
+            <div class="search-result-name">${highlightMatch(p.name, q)}</div>
+            <div class="search-result-cat">${escapeHtml(cat.name)}</div>
+          </div>
+          <div class="search-result-meta">
+            ${count > 0 ? `<span class="search-result-votes">${count}</span>` : ''}
+            ${voted ? `<span class="search-result-check">${checkSvg}</span>` : ''}
+          </div>
+        `;
+
+        item.addEventListener('click', () => {
+          castVote(p);
+          handleSearch(); // refresh results
+        });
+
+        searchResults.appendChild(item);
+      });
+
+      if (matches.length > 15) {
+        const more = document.createElement('div');
+        more.style.cssText = 'text-align:center;padding:8px;font-size:12px;color:var(--text-muted)';
+        more.textContent = `+ ${matches.length - 15} more results`;
+        searchResults.appendChild(more);
+      }
+
+      searchResults.classList.add('active');
+      catGrid.style.display = 'none';
+      podiumSection.style.display = 'none';
+    }
+
+    searchInput.addEventListener('input', handleSearch);
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchInput.focus();
+      handleSearch();
+    });
+
+    // ============================================================
+    // LEADERBOARD TEASER (simplified — podium handles the display)
+    // ============================================================
+    function renderLeaderTeaser() {
+      const ranked = PRODUCTS
+        .map(p => ({ ...p, votes: getVoteCount(p.id) }))
+        .filter(p => p.votes > 0)
+        .sort((a, b) => b.votes - a.votes);
+
+      if (ranked.length > 0) {
+        const top = ranked[0];
+        leaderName.textContent = '#1 ' + top.name;
+        leaderSubtitle.textContent = top.votes + ' vote' + (top.votes !== 1 ? 's' : '') + ' — See all rankings';
+      } else {
+        leaderName.textContent = 'See Rankings';
+        leaderSubtitle.textContent = 'Vote to see who\'s winning';
+      }
+
+      renderPodium();
+    }
+
+    // ============================================================
+    // PODIUM (top 3 on home page)
+    // ============================================================
+    function renderPodium() {
+      const ranked = PRODUCTS
+        .map(p => ({ ...p, votes: getVoteCount(p.id) }))
+        .filter(p => p.votes > 0)
+        .sort((a, b) => b.votes - a.votes);
+
+      if (ranked.length === 0) {
+        podiumContent.innerHTML = `
+          <div class="podium-empty">
+            <div class="podium-empty-text">Vote for products to see who's winning!</div>
+          </div>
+        `;
+        return;
+      }
+
+      const top3 = ranked.slice(0, 3);
+      const slots = [];
+
+      // Build slots: order is #2, #1, #3 for podium display
+      const order = top3.length >= 3 ? [1, 0, 2] : top3.length === 2 ? [1, 0] : [0];
+
+      order.forEach(i => {
+        const p = top3[i];
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'first' : rank === 2 ? 'second' : 'third';
+        const imgEl = p.img
+          ? `<img class="podium-img" src="${p.img}" alt="${escapeHtml(p.name)}" onerror="this.outerHTML='<div class=&quot;podium-img-placeholder&quot;>${escapeHtml(p.name[0])}</div>'">`
+          : `<div class="podium-img-placeholder">${escapeHtml(p.name[0])}</div>`;
+
+        slots.push(`
+          <div class="podium-slot ${rankClass}">
+            <div class="podium-rank">${rank}</div>
+            ${imgEl}
+            <div class="podium-name">${escapeHtml(p.name)}</div>
+            <div class="podium-votes">${p.votes}</div>
+          </div>
+        `);
+      });
+
+      podiumContent.innerHTML = `
+        <div class="podium">${slots.join('')}</div>
+        <div class="podium-link" onclick="openLeaderboard()">See all rankings ›</div>
+      `;
+    }
+
+    // ============================================================
+    // LEADERBOARD OVERLAY
+    // ============================================================
+    function openLeaderboard() {
+      renderLeaderboard();
+      overlayBg.classList.add('active');
+      requestAnimationFrame(() => leaderSheet.classList.add('active'));
+    }
+
+    function closeLeaderboard() {
+      leaderSheet.classList.remove('active');
+      overlayBg.classList.remove('active');
+    }
+
+    function renderLeaderboard() {
+      const ranked = PRODUCTS
+        .map(p => ({ ...p, votes: getVoteCount(p.id) }))
+        .filter(p => p.votes > 0)
+        .sort((a, b) => b.votes - a.votes);
+
+      if (ranked.length === 0) {
+        leaderList.innerHTML = '<div class="leader-empty-state">No votes yet. Be the first!</div>';
+        return;
+      }
+
+      leaderList.innerHTML = '';
+      ranked.forEach((p, i) => {
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+        const row = document.createElement('div');
+        row.className = 'leader-row';
+        row.innerHTML = `
+          <div class="leader-row-rank ${rankClass}">${rank}</div>
+          <div class="leader-row-info">
+            <div class="leader-row-name">${escapeHtml(p.name)}</div>
+            <div class="leader-row-cat">${escapeHtml(CATEGORIES[p.category].name)}</div>
+          </div>
+          <div class="leader-row-count">${p.votes}</div>
+        `;
+        leaderList.appendChild(row);
+      });
+    }
+
+    leaderTeaser.addEventListener('click', openLeaderboard);
+    overlayBg.addEventListener('click', closeLeaderboard);
+    leaderClose.addEventListener('click', closeLeaderboard);
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    renderCategories();
+    renderLeaderTeaser();
+    initSupabase();
+  </script>
+</body>
+</html>
