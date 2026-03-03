@@ -1567,7 +1567,9 @@
     }
 
     backBtn.addEventListener('click', showCategories);
-    document.getElementById('podiumLink').addEventListener('click', openLeaderboard);
+    podiumContent.addEventListener('click', function(e) {
+      if (e.target.closest('.podium-link')) openLeaderboard();
+    });
     leaderTeaser.addEventListener('click', openLeaderboard);
     overlayBg.addEventListener('click', closeLeaderboard);
     leaderClose.addEventListener('click', closeLeaderboard);
