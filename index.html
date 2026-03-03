@@ -1177,7 +1177,7 @@
       }
 
       voteCounts.clear();
-      const myVotes = getVotedSet();
+      const myVotes = new Set();
       (data || []).forEach(row => {
         voteCounts.set(row.product_id, (voteCounts.get(row.product_id) || 0) + 1);
         if (row.device_id === deviceId) myVotes.add(row.product_id);
@@ -1202,6 +1202,16 @@
           renderLeaderTeaser();
           if (leaderSheet.classList.contains('active')) renderLeaderboard();
         })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'votes' }, payload => {
+          const pid = payload.old.product_id;
+          // Only decrement for OTHER devices — this device already decremented optimistically in castVote()
+          if (payload.old.device_id !== getDeviceId()) {
+            voteCounts.set(pid, Math.max(0, (voteCounts.get(pid) || 1) - 1));
+          }
+          renderCurrentView();
+          renderLeaderTeaser();
+          if (leaderSheet.classList.contains('active')) renderLeaderboard();
+        })
         .subscribe();
     }
 
@@ -1209,9 +1219,34 @@
     // VOTING
     // ============================================================
     async function castVote(product) {
-      if (hasVoted(product.id)) return;
+      if (hasVoted(product.id)) {
+        // Optimistic unvote
+        const set = getVotedSet();
+        set.delete(product.id);
+        localStorage.setItem('vm_voted', JSON.stringify([...set]));
+        voteCounts.set(product.id, Math.max(0, (voteCounts.get(product.id) || 1) - 1));
+        renderCurrentView();
+        renderLeaderTeaser();
+        showToast('Vote removed');
 
-      // Optimistic update
+        if (!supabaseClient) return;
+
+        const { error } = await supabaseClient.from('votes').delete()
+          .eq('product_id', product.id)
+          .eq('device_id', getDeviceId());
+
+        if (error) {
+          // Revert — re-add the vote
+          markVoted(product.id);
+          voteCounts.set(product.id, (voteCounts.get(product.id) || 0) + 1);
+          renderCurrentView();
+          renderLeaderTeaser();
+          showToast('Something went wrong. Try again.');
+        }
+        return;
+      }
+
+      // Optimistic vote
       markVoted(product.id);
       voteCounts.set(product.id, (voteCounts.get(product.id) || 0) + 1);
       renderCurrentView();
