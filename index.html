@@ -1080,7 +1080,7 @@
     // ============================================================
     // STATE
     // ============================================================
-    let supabase = null;
+    let supabaseClient = null;
     let currentCategory = null;
     let initialRender = true;
     const voteCounts = new Map();
@@ -1154,7 +1154,7 @@
         return;
       }
       try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         fetchVoteCounts();
         subscribeToVotes();
       } catch (e) {
@@ -1163,10 +1163,10 @@
     }
 
     async function fetchVoteCounts() {
-      if (!supabase) return;
+      if (!supabaseClient) return;
       const deviceId = getDeviceId();
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('votes')
         .select('product_id, device_id');
 
@@ -1187,8 +1187,8 @@
     }
 
     function subscribeToVotes() {
-      if (!supabase) return;
-      supabase
+      if (!supabaseClient) return;
+      supabaseClient
         .channel('votes-realtime')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, payload => {
           const pid = payload.new.product_id;
@@ -1217,9 +1217,9 @@
       renderLeaderTeaser();
       showToast('Vote recorded!');
 
-      if (!supabase) return;
+      if (!supabaseClient) return;
 
-      const { error } = await supabase.from('votes').insert({
+      const { error } = await supabaseClient.from('votes').insert({
         product_id: product.id,
         product_name: product.name,
         category: product.category,
