@@ -965,8 +965,8 @@
     // ============================================================
     // CONFIG — Replace with your Supabase project credentials
     // ============================================================
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://ccortigokdvvntbteyri.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjb3J0aWdva2R2dm50YnRleXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMjI3MzAsImV4cCI6MjA4NzY5ODczMH0.3n51IpWWXLFUg2TLC84gHRcRj4Murz7WYr0mFcLOjIw';
 
     // ============================================================
     // PRODUCT DATA — Sam's Club verified, vending-appropriate sizes
@@ -1192,7 +1192,10 @@
         .channel('votes-realtime')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, payload => {
           const pid = payload.new.product_id;
-          voteCounts.set(pid, (voteCounts.get(pid) || 0) + 1);
+          // Only increment for OTHER devices — this device already counted optimistically in castVote()
+          if (payload.new.device_id !== getDeviceId()) {
+            voteCounts.set(pid, (voteCounts.get(pid) || 0) + 1);
+          }
           if (payload.new.device_id === getDeviceId()) markVoted(pid);
           renderCurrentView();
           renderLeaderTeaser();
