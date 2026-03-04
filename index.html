@@ -663,74 +663,6 @@
     }
 
     /* ===== BOTTOM BAR (Leaderboard Teaser) ===== */
-    .bottom-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 40;
-      background: rgba(15, 31, 23, 0.92);
-      backdrop-filter: blur(24px) saturate(1.5);
-      -webkit-backdrop-filter: blur(24px) saturate(1.5);
-      border-top: 1px solid var(--border-medium);
-      padding: 0 0 var(--safe-bottom);
-    }
-
-    .bottom-inner {
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      padding: 14px 16px;
-      gap: 12px;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .bottom-inner:active { background: rgba(255,255,255,0.03); }
-
-    .leader-rank-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--secondary);
-      border-radius: var(--radius-full);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: #000;
-    }
-
-    .leader-rank-icon svg { stroke-width: 2.5; }
-
-    .leader-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .leader-name {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .leader-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
-
-    .leader-arrow {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--accent);
-      white-space: nowrap;
-      flex-shrink: 0;
-      letter-spacing: 0.3px;
-    }
 
     .leader-empty {
       flex: 1;
@@ -934,19 +866,6 @@
     <div class="product-grid" id="productGrid"></div>
   </div>
 
-  <!-- Bottom bar: compact rankings link -->
-  <div class="bottom-bar">
-    <div class="bottom-inner" id="leaderTeaser">
-      <div class="leader-rank-icon" id="leaderIcon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-      </div>
-      <div class="leader-info" id="leaderInfo">
-        <div class="leader-name" id="leaderName">See Rankings</div>
-        <div class="leader-subtitle" id="leaderSubtitle">View all product rankings</div>
-      </div>
-      <span class="leader-arrow" id="leaderArrow">Rankings &#8250;</span>
-    </div>
-  </div>
 
   <!-- Leaderboard overlay -->
   <div class="overlay-bg" id="overlayBg"></div>
@@ -1105,12 +1024,6 @@
     const leaderSheet = $('leaderSheet');
     const leaderClose = $('leaderClose');
     const leaderList = $('leaderList');
-    const leaderTeaser = $('leaderTeaser');
-    const leaderIcon = $('leaderIcon');
-    const leaderInfo = $('leaderInfo');
-    const leaderName = $('leaderName');
-    const leaderSubtitle = $('leaderSubtitle');
-    const leaderArrow = $('leaderArrow');
     const podiumSection = $('podiumSection');
     const podiumContent = $('podiumContent');
     const toastEl = $('toast');
@@ -1490,23 +1403,9 @@
     });
 
     // ============================================================
-    // LEADERBOARD TEASER (simplified — podium handles the display)
+    // LEADERBOARD TEASER
     // ============================================================
     function renderLeaderTeaser() {
-      const ranked = PRODUCTS
-        .map(p => ({ ...p, votes: getVoteCount(p.id) }))
-        .filter(p => p.votes > 0)
-        .sort((a, b) => b.votes - a.votes);
-
-      if (ranked.length > 0) {
-        const top = ranked[0];
-        leaderName.textContent = '#1 ' + top.name;
-        leaderSubtitle.textContent = top.votes + ' vote' + (top.votes !== 1 ? 's' : '') + ' — See all rankings';
-      } else {
-        leaderName.textContent = 'See Rankings';
-        leaderSubtitle.textContent = 'Vote to see who\'s winning';
-      }
-
       renderPodium();
     }
 
@@ -1605,7 +1504,6 @@
     podiumContent.addEventListener('click', function(e) {
       if (e.target.closest('.podium-link')) openLeaderboard();
     });
-    leaderTeaser.addEventListener('click', openLeaderboard);
     overlayBg.addEventListener('click', closeLeaderboard);
     leaderClose.addEventListener('click', closeLeaderboard);
 

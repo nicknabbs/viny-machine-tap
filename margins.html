@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Margins — Smart Snacks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #111113;
+      --bg-row: #18181b;
+      --bg-row-alt: #1c1c20;
+      --bg-row-hover: #222228;
+      --bg-surface: #1e1e23;
+      --bg-input: #16161a;
+      --border: #2a2a30;
+      --border-focus: #d4a843;
+      --amber: #d4a843;
+      --amber-dim: rgba(212, 168, 67, 0.15);
+      --amber-glow: rgba(212, 168, 67, 0.25);
+      --green: #3ddc84;
+      --green-dim: rgba(61, 220, 132, 0.12);
+      --red: #ef5350;
+      --red-dim: rgba(239, 83, 80, 0.10);
+      --text: #e8e6e1;
+      --text-dim: #8a8880;
+      --text-muted: #555550;
+      --tier-top: #3ddc84;
+      --tier-strong: #d4a843;
+      --tier-mid: #e8e6e1;
+      --tier-low: #ef5350;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Space Grotesk', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* noise overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ═══ HEADER ═══ */
+    .page-header {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-header h1 {
+      font-family: var(--mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--amber);
+    }
+
+    .page-header .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+
+    .page-header .back-link {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .page-header .back-link:hover {
+      color: var(--amber);
+      border-color: var(--amber);
+    }
+
+    /* ═══ SUMMARY STRIP ═══ */
+    .summary-strip {
+      display: flex;
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .summary-cell {
+      flex: 1;
+      background: var(--bg);
+      padding: 16px 20px;
+      min-width: 120px;
+    }
+
+    .summary-cell .label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-cell .value {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .summary-cell .value.amber { color: var(--amber); }
+    .summary-cell .value.green { color: var(--green); }
+
+    /* ═══ CONTROLS ═══ */
+    .controls {
+      padding: 16px 32px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .filter-btn {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+      padding: 7px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    .filter-btn.active {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .sort-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-left: auto;
+      margin-right: 4px;
+    }
+
+    .sort-select {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 7px 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 3px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .sort-select:focus {
+      border-color: var(--border-focus);
+    }
+
+    .sort-select option { background: var(--bg); }
+
+    /* ═══ TABLE ═══ */
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    thead th {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      text-align: left;
+      background: var(--bg);
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.12s ease;
+    }
+
+    thead th:hover { color: var(--text-dim); }
+    thead th.sorted { color: var(--amber); }
+
+    thead th .sort-arrow {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    thead th.sorted .sort-arrow { opacity: 1; }
+
+    thead th.right { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(42, 42, 48, 0.5);
+      transition: background 0.1s ease;
+    }
+
+    tbody tr:nth-child(odd) { background: var(--bg-row); }
+    tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+    tbody tr:hover { background: var(--bg-row-hover); }
+
+    td {
+      padding: 11px 16px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    td.mono {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    td.right { text-align: right; }
+
+    td.product-name {
+      font-weight: 600;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td .category-tag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      padding: 2px 7px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    td .cost { color: var(--red); }
+    td .sell { color: var(--text); }
+    td .profit { color: var(--green); }
+
+    td .estimate-flag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-left: 2px;
+      vertical-align: super;
+    }
+
+    /* ─── Margin Bar ─── */
+    .margin-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .margin-bar-track {
+      width: 100px;
+      height: 6px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .margin-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .margin-pct {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      min-width: 38px;
+      text-align: right;
+    }
+
+    /* tier colors */
+    .tier-top .margin-bar-fill { background: var(--tier-top); }
+    .tier-top .margin-pct { color: var(--tier-top); }
+
+    .tier-strong .margin-bar-fill { background: var(--tier-strong); }
+    .tier-strong .margin-pct { color: var(--tier-strong); }
+
+    .tier-mid .margin-bar-fill { background: var(--tier-mid); opacity: 0.6; }
+    .tier-mid .margin-pct { color: var(--text-dim); }
+
+    .tier-low .margin-bar-fill { background: var(--tier-low); }
+    .tier-low .margin-pct { color: var(--tier-low); }
+
+    /* ─── Pack info ─── */
+    td .pack-info {
+      color: var(--text-dim);
+      font-size: 0.78rem;
+    }
+
+    /* ═══ CATEGORY SECTION HEADERS (in table) ═══ */
+    .category-header-row td {
+      background: rgba(212, 168, 67, 0.06);
+      border-bottom: 1px solid rgba(212, 168, 67, 0.15);
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--amber);
+    }
+
+    /* ═══ NOTES ═══ */
+    .notes-section {
+      padding: 28px 32px 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .notes-section h3 {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--amber);
+      margin-bottom: 16px;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 12px;
+    }
+
+    .note-card {
+      background: var(--bg-row);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 16px;
+    }
+
+    .note-card .note-title {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .note-card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .note-card li {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      padding: 3px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .note-card li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    /* ═══ AVAILABILITY FLAGS ═══ */
+    .avail-flag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(212, 168, 67, 0.1);
+      color: var(--amber);
+      border: 1px solid rgba(212, 168, 67, 0.2);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* ═══ TIER LEGEND ═══ */
+    .tier-legend {
+      display: flex;
+      gap: 20px;
+      padding: 12px 32px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .tier-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    .tier-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 768px) {
+      .page-header { padding: 16px 16px 14px; }
+      .controls { padding: 12px 16px; }
+      .summary-strip { flex-wrap: wrap; }
+      .summary-cell { min-width: 100px; padding: 12px 14px; }
+      .summary-cell .value { font-size: 1.2rem; }
+      .notes-section { padding: 20px 16px 32px; }
+      .tier-legend { padding: 10px 16px; }
+
+      td { padding: 9px 10px; font-size: 0.78rem; }
+      td.mono { font-size: 0.72rem; }
+      .margin-bar-track { width: 60px; }
+    }
+
+    /* ═══ ANIMATIONS ═══ */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    tbody tr {
+      animation: fadeInUp 0.25s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      tbody tr { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <h1>MARGINS</h1>
+    <span class="subtitle">Product Cost Breakdown & Profit Margins</span>
+    <a href="index.html" class="back-link">&larr; Voting App</a>
+  </header>
+
+  <div class="summary-strip" id="summaryStrip"></div>
+
+  <div class="tier-legend">
+    <div class="tier-legend-item"><div class="tier-legend-dot" style="background:var(--tier-top)"></div> 75%+ Top</div>
+    <div class="tier-legend-item"><div class="tier-legend-dot" style="background:var(--tier-strong)"></div> 60-74% Strong</div>
+    <div class="tier-legend-item"><div class="tier-legend-dot" style="background:var(--tier-mid)"></div> 50-59% Mid</div>
+    <div class="tier-legend-item"><div class="tier-legend-dot" style="background:var(--tier-low)"></div> &lt;50% Lower</div>
+    <div class="tier-legend-item" style="margin-left:auto;color:var(--text-muted)">~ = estimated price</div>
+  </div>
+
+  <div class="controls" id="controls"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="notes-section">
+    <h3>Sourcing Notes</h3>
+    <div class="notes-grid">
+      <div class="note-card">
+        <div class="note-title">Variety Pack Items</div>
+        <ul>
+          <li>Olipop: variety pack only (3 mixed flavors)</li>
+          <li>Celsius: 2 variety packs of 3 flavors each (Core + Vibe)</li>
+          <li>Alani Nu: variety pack only (multiple flavors)</li>
+          <li>Gatorade Glacier Freeze: Frost Variety Pack only</li>
+          <li>Golden Oreos: mixed with regular Oreos</li>
+          <li>Planters Honey Roasted: mixed variety pack</li>
+        </ul>
+      </div>
+      <div class="note-card">
+        <div class="note-title">Best Margin Plays</div>
+        <ul>
+          <li>Planters Peanuts ($0.19/pk) and Gatorade Zero ($0.56/bottle) are margin kings</li>
+          <li>Candy margins are tighter than expected (~34-37%)</li>
+          <li>Chips variety packs at $18.48 are consistent pricing</li>
+          <li>Pepsi brands give slightly better margin than Coke</li>
+          <li>Powerade is the best margin sports drink</li>
+        </ul>
+      </div>
+      <div class="note-card">
+        <div class="note-title">Pricing Notes</div>
+        <ul>
+          <li>All costs are Sam's Club in-club member prices (Lakeland, FL)</li>
+          <li>All prices verified via Sam's Club app — March 2026</li>
+          <li>Monster sometimes on sale at $37.98 ($1.58/can)</li>
+          <li>Red Bull sometimes on instant savings at $34.98</li>
+          <li>Alani Nu sometimes on instant savings at $18.98</li>
+        </ul>
+      </div>
+      <div class="note-card">
+        <div class="note-title">Size Notes</div>
+        <ul>
+          <li>Sodas: 12oz cans</li>
+          <li>Monster/NOS: 16oz cans</li>
+          <li>Red Bull: 8.4oz cans (standard retail)</li>
+          <li>Celsius/Alani Nu: 12oz cans</li>
+          <li>Gatorade/Powerade: 20oz bottles</li>
+          <li>BodyArmor: 16oz bottles (slightly smaller)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function() {
+  // ════════════════════════════════════════════════
+  // PRODUCT COST DATA
+  // ════════════════════════════════════════════════
+  const CATEGORIES = {
+    sodas:   { name: 'Sodas',             label: '12oz Cans',           order: 0 },
+    energy:  { name: 'Energy Drinks',     label: 'Various Sizes',      order: 1 },
+    sports:  { name: 'Sports Drinks',     label: '20oz Bottles',       order: 2 },
+    water:   { name: 'Water & Tea',       label: 'Various Sizes',      order: 3 },
+    chips:   { name: 'Chips & Crunchy',   label: 'Individual Bags',    order: 4 },
+    candy:   { name: 'Candy & Chocolate', label: 'Full Size Bars',     order: 5 },
+    cookies: { name: 'Cookies, Bars & Nuts', label: 'Individual Packs', order: 6 },
+  };
+
+  // est = estimated price (not verified in-store)
+  // vpOnly = variety pack only (can't buy single-flavor bulk)
+  const PRODUCTS = [
+    // ── Sodas ──
+    { id:'coca-cola',       name:'Coca-Cola',           cat:'sodas',  pack:'35pk $19.98',   cost:0.57, sell:1.25, est:false },
+    { id:'coke-zero',       name:'Coke Zero',           cat:'sodas',  pack:'35pk $19.98',   cost:0.57, sell:1.25, est:false },
+    { id:'diet-coke',       name:'Diet Coke',           cat:'sodas',  pack:'35pk $19.98',   cost:0.57, sell:1.25, est:false },
+    { id:'sprite',          name:'Sprite',              cat:'sodas',  pack:'35pk $19.98',   cost:0.57, sell:1.25, est:false },
+    { id:'sprite-zero',     name:'Sprite Zero',         cat:'sodas',  pack:'35pk $19.98',   cost:0.57, sell:1.25, est:false },
+    { id:'pepsi',           name:'Pepsi',               cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'pepsi-zero',      name:'Pepsi Zero',          cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'diet-pepsi',      name:'Diet Pepsi',          cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'dr-pepper',       name:'Dr Pepper',           cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'diet-dr-pepper',  name:'Diet Dr Pepper',      cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'dr-pepper-zero',  name:'Dr Pepper Zero',      cat:'sodas',  pack:'24pk $13.18',   cost:0.55, sell:1.25, est:false },
+    { id:'mountain-dew',    name:'Mountain Dew',        cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'diet-mtn-dew',    name:'Diet Mtn Dew',        cat:'sodas',  pack:'36pk $17.98',   cost:0.50, sell:1.25, est:false },
+    { id:'aw-root-beer',    name:'A&W Root Beer',       cat:'sodas',  pack:'24pk $11.98',   cost:0.50, sell:1.25, est:false },
+    { id:'canada-dry',      name:'Canada Dry',          cat:'sodas',  pack:'24pk $11.98',   cost:0.50, sell:1.25, est:false },
+    { id:'olipop',          name:'Olipop',              cat:'sodas',  pack:'12pk $18.48',   cost:1.54, sell:3.00, est:false, vpOnly:true },
+
+    // ── Energy Drinks ──
+    { id:'monster-original',   name:'Monster Original',     cat:'energy', pack:'24pk 16oz $42.48',  cost:1.77, sell:3.00, est:false },
+    { id:'monster-zero-ultra', name:'Monster Zero Ultra',   cat:'energy', pack:'24pk 16oz $38.98',  cost:1.62, sell:3.00, est:false },
+    { id:'monster-lo-carb',    name:'Monster Lo-Carb',      cat:'energy', pack:'24pk 16oz $42.48',  cost:1.77, sell:3.00, est:false },
+    { id:'monster-zero-sugar', name:'Monster Zero Sugar',   cat:'energy', pack:'24pk 16oz $42.48',  cost:1.77, sell:3.00, est:false },
+    { id:'redbull',            name:'Red Bull',             cat:'energy', pack:'24pk 8.4oz $38.98', cost:1.62, sell:2.75, est:false },
+    { id:'redbull-sugar-free', name:'Red Bull Sugar-Free',  cat:'energy', pack:'24pk 8.4oz $38.98', cost:1.62, sell:2.75, est:false },
+    { id:'celsius-kiwi-guava', name:'Celsius Kiwi Guava',  cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'celsius-orange',     name:'Celsius Orange',       cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'celsius-watermelon', name:'Celsius Watermelon',   cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'celsius-peach-vibe', name:'Celsius Peach Vibe',   cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'celsius-tropical',   name:'Celsius Tropical Vibe',cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'celsius-retro',      name:'Celsius Retro Vibe',   cat:'energy', pack:'18pk 12oz $23.98',  cost:1.33, sell:2.50, est:false, vpOnly:true },
+    { id:'alani-nu',           name:'Alani Nu',             cat:'energy', pack:'18pk 12oz $24.98',  cost:1.39, sell:2.50, est:false, vpOnly:true },
+    { id:'nos',                name:'NOS',                  cat:'energy', pack:'24pk 16oz $34.98',  cost:1.46, sell:3.00, est:false },
+
+    // ── Sports Drinks ──
+    { id:'gatorade-lemon-lime',    name:'Gatorade Lemon Lime',    cat:'sports', pack:'24pk $18.48',  cost:0.77, sell:2.00, est:false },
+    { id:'gatorade-orange',        name:'Gatorade Orange',        cat:'sports', pack:'24pk $18.48',  cost:0.77, sell:2.00, est:false },
+    { id:'gatorade-fruit-punch',   name:'Gatorade Fruit Punch',   cat:'sports', pack:'24pk $18.48',  cost:0.77, sell:2.00, est:false },
+    { id:'gatorade-glacier-freeze',name:'Gatorade Glacier Freeze', cat:'sports', pack:'24pk $18.48',  cost:0.77, sell:2.00, est:false, vpOnly:true },
+    { id:'gatorade-zero',          name:'Gatorade Zero',          cat:'sports', pack:'28pk $15.78',  cost:0.56, sell:2.00, est:false },
+    { id:'powerade',               name:'Powerade',               cat:'sports', pack:'24pk $15.98',  cost:0.67, sell:2.00, est:false },
+    { id:'bodyarmor',              name:'BodyArmor',              cat:'sports', pack:'20pk 16oz $15.98',  cost:0.80, sell:2.00, est:false },
+
+    // ── Water & Tea ──
+    { id:'lacroix',           name:'LaCroix',            cat:'water', pack:'24pk 12oz $9.98',     cost:0.42, sell:1.50, est:false },
+    { id:'bubly',             name:'Bubly',              cat:'water', pack:'24pk 12oz $9.48',     cost:0.40, sell:1.50, est:false },
+    { id:'perrier',           name:'Perrier',            cat:'water', pack:'24pk 16.9oz $22.98',  cost:0.96, sell:2.00, est:false },
+    { id:'arizona-green-tea', name:'Arizona Green Tea',  cat:'water', pack:'24pk 16oz $12.78',    cost:0.53, sell:1.50, est:false },
+
+    // ── Chips & Crunchy ──
+    { id:'lays-classic',       name:"Lay's Classic",            cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'lays-bbq',           name:"Lay's BBQ",               cat:'chips', pack:'30pk $18.48',        cost:0.62, sell:1.50, est:false },
+    { id:'lays-sour-cream',    name:"Lay's Sour Cream & Onion",cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'doritos-nacho',      name:'Doritos Nacho Cheese',    cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'doritos-cool-ranch', name:'Doritos Cool Ranch',      cat:'chips', pack:'30pk $18.48',        cost:0.62, sell:1.50, est:false },
+    { id:'cheetos-crunchy',    name:'Cheetos Crunchy',         cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'cheetos-flamin-hot', name:"Cheetos Flamin' Hot",     cat:'chips', pack:'30pk $18.48',        cost:0.62, sell:1.50, est:false },
+    { id:'cheetos-puffs',      name:'Cheetos Puffs',           cat:'chips', pack:'30pk $18.48',        cost:0.62, sell:1.50, est:false },
+    { id:'fritos',             name:'Fritos',                  cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'ruffles',            name:'Ruffles',                 cat:'chips', pack:'50pk Mix $18.48',    cost:0.37, sell:1.50, est:false },
+    { id:'takis-fuego',        name:'Takis Fuego',             cat:'chips', pack:'46pk $17.28',        cost:0.38, sell:1.50, est:false },
+    { id:'sunchips',           name:'SunChips',                cat:'chips', pack:'30pk $18.48',        cost:0.62, sell:1.50, est:false },
+    { id:'veggie-straws',      name:'Veggie Straws',           cat:'chips', pack:'30pk $13.98',        cost:0.47, sell:1.50, est:false },
+
+    // ── Candy & Chocolate ──
+    { id:'snickers',           name:'Snickers',                    cat:'candy', pack:'48pk $52.48',    cost:1.09, sell:1.75, est:false },
+    { id:'reeses',             name:"Reese's",                     cat:'candy', pack:'36pk $41.72',    cost:1.16, sell:1.75, est:false },
+    { id:'kitkat',             name:'KitKat',                      cat:'candy', pack:'36pk $41.72',    cost:1.16, sell:1.75, est:false },
+    { id:'twix',               name:'Twix',                        cat:'candy', pack:'36pk $39.98',    cost:1.11, sell:1.75, est:false },
+    { id:'butterfinger',       name:'Butterfinger',                cat:'candy', pack:'36pk $39.98',    cost:1.11, sell:1.75, est:false },
+    { id:'milky-way',          name:'Milky Way',                   cat:'candy', pack:'36pk $39.98',    cost:1.11, sell:1.75, est:false },
+    { id:'3-musketeers',       name:'3 Musketeers',                cat:'candy', pack:'36pk $39.98',    cost:1.11, sell:1.75, est:false },
+    { id:'mms-milk',           name:"M&M's Milk Chocolate",        cat:'candy', pack:'48pk $52.48',    cost:1.09, sell:1.75, est:false },
+    { id:'mms-peanut',         name:"M&M's Peanut",                cat:'candy', pack:'48pk $52.48',    cost:1.09, sell:1.75, est:false },
+    { id:'skittles',           name:'Skittles',                    cat:'candy', pack:'36pk $39.98',    cost:1.11, sell:1.75, est:false },
+    { id:'hersheys-milk',      name:"Hershey's Milk Chocolate",    cat:'candy', pack:'36pk $41.72',    cost:1.16, sell:1.75, est:false },
+    { id:'hersheys-cookies',   name:"Hershey's Cookies 'n' Creme", cat:'candy', pack:'36pk $41.72',    cost:1.16, sell:1.75, est:false },
+    { id:'hersheys-almonds',   name:"Hershey's Almonds",           cat:'candy', pack:'36pk $41.72',    cost:1.16, sell:1.75, est:false },
+
+    // ── Cookies, Bars & Nuts ──
+    { id:'oreos',              name:'Oreos',                       cat:'cookies', pack:'30pk VP $12.78', cost:0.43, sell:1.50, est:false, vpOnly:true },
+    { id:'oreos-golden',       name:'Golden Oreos',                cat:'cookies', pack:'30pk VP $12.78', cost:0.43, sell:1.50, est:false, vpOnly:true },
+    { id:'chips-ahoy',         name:'Chips Ahoy',                 cat:'cookies', pack:'30pk VP $13.48', cost:0.45, sell:1.50, est:false, vpOnly:true },
+    { id:'famous-amos',        name:'Famous Amos',                cat:'cookies', pack:'42pk $18.38',   cost:0.44, sell:1.50, est:false },
+    { id:'planters-cashews',   name:'Planters Cashews',            cat:'cookies', pack:'18pk $8.98',    cost:0.50, sell:2.00, est:false },
+    { id:'planters-peanuts',   name:'Planters Peanuts',            cat:'cookies', pack:'48pk $8.98',    cost:0.19, sell:1.50, est:false },
+    { id:'planters-honey',     name:'Planters Honey Roasted',      cat:'cookies', pack:'24pk VP $10.88', cost:0.45, sell:1.50, est:false, vpOnly:true },
+    { id:'nature-valley-oats', name:"Nature Valley Oats 'n Honey", cat:'cookies', pack:'49pk $14.98',   cost:0.31, sell:1.50, est:false },
+    { id:'nature-valley-sweet',name:'Nature Valley Sweet & Salty',  cat:'cookies', pack:'36pk $11.48',   cost:0.32, sell:1.50, est:false },
+    { id:'nature-valley-pb',   name:'Nature Valley PB Dark Choc',   cat:'cookies', pack:'30pk $15.96',   cost:0.53, sell:1.50, est:false },
+    { id:'kind-bar',           name:'KIND Bar',                    cat:'cookies', pack:'18pk $17.98',   cost:1.00, sell:2.00, est:false },
+    { id:'rxbar',              name:'RXBAR',                       cat:'cookies', pack:'14pk $18.86',   cost:1.35, sell:2.75, est:false },
+  ];
+
+  // ════════════════════════════════════════════════
+  // COMPUTED FIELDS
+  // ════════════════════════════════════════════════
+  PRODUCTS.forEach(p => {
+    p.profit = +(p.sell - p.cost).toFixed(2);
+    p.margin = +((p.profit / p.sell) * 100).toFixed(0);
+    if (p.margin >= 75) p.tier = 'top';
+    else if (p.margin >= 60) p.tier = 'strong';
+    else if (p.margin >= 50) p.tier = 'mid';
+    else p.tier = 'low';
+  });
+
+  // ════════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════════
+  let activeFilter = 'all';
+  let sortKey = 'margin';
+  let sortDir = -1; // -1 = desc, 1 = asc
+
+  // ════════════════════════════════════════════════
+  // HELPERS
+  // ════════════════════════════════════════════════
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function money(n) { return '$' + n.toFixed(2); }
+
+  function getFiltered() {
+    let items = activeFilter === 'all' ? [...PRODUCTS] : PRODUCTS.filter(p => p.cat === activeFilter);
+    items.sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'string') av = av.toLowerCase();
+      if (typeof bv === 'string') bv = bv.toLowerCase();
+      if (av < bv) return -1 * sortDir;
+      if (av > bv) return 1 * sortDir;
+      return 0;
+    });
+    return items;
+  }
+
+  // ════════════════════════════════════════════════
+  // SUMMARY
+  // ════════════════════════════════════════════════
+  function renderSummary() {
+    const items = getFiltered();
+    const count = items.length;
+    const avgMargin = count ? Math.round(items.reduce((s, p) => s + p.margin, 0) / count) : 0;
+    const avgProfit = count ? (items.reduce((s, p) => s + p.profit, 0) / count).toFixed(2) : '0.00';
+    const best = items.length ? items.reduce((a, b) => a.margin > b.margin ? a : b) : null;
+    const avgCost = count ? (items.reduce((s, p) => s + p.cost, 0) / count).toFixed(2) : '0.00';
+
+    document.getElementById('summaryStrip').innerHTML = `
+      <div class="summary-cell">
+        <div class="label">Products</div>
+        <div class="value">${count}</div>
+      </div>
+      <div class="summary-cell">
+        <div class="label">Avg Margin</div>
+        <div class="value amber">${avgMargin}%</div>
+      </div>
+      <div class="summary-cell">
+        <div class="label">Avg Profit</div>
+        <div class="value green">${money(+avgProfit)}</div>
+      </div>
+      <div class="summary-cell">
+        <div class="label">Avg Cost</div>
+        <div class="value">${money(+avgCost)}</div>
+      </div>
+      <div class="summary-cell">
+        <div class="label">Best Margin</div>
+        <div class="value green">${best ? best.margin + '%' : '—'}</div>
+      </div>
+    `;
+  }
+
+  // ════════════════════════════════════════════════
+  // CONTROLS
+  // ════════════════════════════════════════════════
+  function renderControls() {
+    const cats = [{ key: 'all', label: 'All' }, ...Object.entries(CATEGORIES)
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([k, v]) => ({ key: k, label: v.name }))
+    ];
+
+    const btns = cats.map(c =>
+      `<button class="filter-btn${activeFilter === c.key ? ' active' : ''}" data-cat="${c.key}">${esc(c.label)}</button>`
+    ).join('');
+
+    const sortOpts = [
+      { val: 'margin', label: 'Margin' },
+      { val: 'profit', label: 'Profit $' },
+      { val: 'cost', label: 'Cost' },
+      { val: 'sell', label: 'Sell Price' },
+      { val: 'name', label: 'Name' },
+    ].map(o => `<option value="${o.val}"${sortKey === o.val ? ' selected' : ''}>${o.label}</option>`).join('');
+
+    document.getElementById('controls').innerHTML = `
+      ${btns}
+      <span class="sort-label">Sort</span>
+      <select class="sort-select" id="sortSelect">${sortOpts}</select>
+    `;
+
+    // bind filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeFilter = btn.dataset.cat;
+        render();
+      });
+    });
+
+    // bind sort
+    document.getElementById('sortSelect').addEventListener('change', e => {
+      sortKey = e.target.value;
+      sortDir = (sortKey === 'name') ? 1 : -1;
+      render();
+    });
+  }
+
+  // ════════════════════════════════════════════════
+  // TABLE
+  // ════════════════════════════════════════════════
+  const COLUMNS = [
+    { key: 'name',   label: 'Product',     cls: '' },
+    { key: 'cat',    label: 'Category',     cls: '' },
+    { key: 'pack',   label: "Sam's Pack",   cls: '' },
+    { key: 'cost',   label: 'Cost/Unit',    cls: 'right' },
+    { key: 'sell',   label: 'Sell At',      cls: 'right' },
+    { key: 'profit', label: 'Profit',       cls: 'right' },
+    { key: 'margin', label: 'Margin',       cls: '' },
+  ];
+
+  function renderHead() {
+    document.getElementById('tableHead').innerHTML = '<tr>' + COLUMNS.map(col => {
+      const sorted = sortKey === col.key;
+      const arrow = sorted ? (sortDir === -1 ? '&#9660;' : '&#9650;') : '&#9660;';
+      return `<th class="${col.cls}${sorted ? ' sorted' : ''}" data-col="${col.key}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
+    }).join('') + '</tr>';
+
+    document.querySelectorAll('thead th').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (sortKey === col) {
+          sortDir *= -1;
+        } else {
+          sortKey = col;
+          sortDir = (col === 'name' || col === 'cat') ? 1 : -1;
+        }
+        render();
+      });
+    });
+  }
+
+  function renderBody() {
+    const items = getFiltered();
+    const tbody = document.getElementById('tableBody');
+
+    let prevCat = null;
+    let html = '';
+
+    items.forEach((p, i) => {
+      // Category header rows when showing all + sorted by something that groups
+      if (activeFilter === 'all' && sortKey === 'cat' && p.cat !== prevCat) {
+        prevCat = p.cat;
+        const catInfo = CATEGORIES[p.cat];
+        html += `<tr class="category-header-row"><td colspan="7">${esc(catInfo.name)} — ${esc(catInfo.label)}</td></tr>`;
+      }
+
+      const tierCls = 'tier-' + p.tier;
+      const estMark = p.est ? '<span class="estimate-flag">~</span>' : '';
+      const vpFlag = p.vpOnly ? '<span class="avail-flag">VP</span>' : '';
+      const delay = Math.min(i * 15, 400);
+
+      html += `<tr style="animation-delay:${delay}ms">
+        <td class="product-name">${esc(p.name)}${vpFlag}</td>
+        <td><span class="category-tag">${esc(CATEGORIES[p.cat].name)}</span></td>
+        <td class="mono"><span class="pack-info">${esc(p.pack)}</span></td>
+        <td class="mono right"><span class="cost">${money(p.cost)}</span>${estMark}</td>
+        <td class="mono right"><span class="sell">${money(p.sell)}</span></td>
+        <td class="mono right"><span class="profit">${money(p.profit)}</span></td>
+        <td>
+          <div class="margin-cell ${tierCls}">
+            <div class="margin-bar-track">
+              <div class="margin-bar-fill" style="width:${p.margin}%"></div>
+            </div>
+            <span class="margin-pct">${p.margin}%</span>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  // ════════════════════════════════════════════════
+  // RENDER ALL
+  // ════════════════════════════════════════════════
+  function render() {
+    renderSummary();
+    renderControls();
+    renderHead();
+    renderBody();
+  }
+
+  render();
+})();
+</script>
+
+</body>
+</html>
