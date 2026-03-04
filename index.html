@@ -1138,7 +1138,7 @@
         set.delete(product.id);
         localStorage.setItem('vm_voted', JSON.stringify([...set]));
         voteCounts.set(product.id, Math.max(0, (voteCounts.get(product.id) || 1) - 1));
-        renderCurrentView();
+        updateCardState(product.id);
         renderLeaderTeaser();
         showToast('Vote removed');
 
@@ -1152,7 +1152,7 @@
           // Revert — re-add the vote
           markVoted(product.id);
           voteCounts.set(product.id, (voteCounts.get(product.id) || 0) + 1);
-          renderCurrentView();
+          updateCardState(product.id);
           renderLeaderTeaser();
           showToast('Something went wrong. Try again.');
         }
@@ -1162,7 +1162,7 @@
       // Optimistic vote
       markVoted(product.id);
       voteCounts.set(product.id, (voteCounts.get(product.id) || 0) + 1);
-      renderCurrentView();
+      updateCardState(product.id);
       renderLeaderTeaser();
       showToast('Vote recorded!');
 
@@ -1182,7 +1182,7 @@
         set.delete(product.id);
         localStorage.setItem('vm_voted', JSON.stringify([...set]));
         voteCounts.set(product.id, Math.max(0, (voteCounts.get(product.id) || 1) - 1));
-        renderCurrentView();
+        updateCardState(product.id);
         renderLeaderTeaser();
         showToast('Something went wrong. Try again.');
       }
@@ -1214,6 +1214,35 @@
 
     function getCategoryVotes(catKey) {
       return getCategoryProducts(catKey).reduce((sum, p) => sum + getVoteCount(p.id), 0);
+    }
+
+    function updateCardState(productId) {
+      const cards = productGrid.querySelectorAll('.product-card');
+      cards.forEach(card => {
+        const badge = card.querySelector('.vote-badge');
+        if (!badge) return;
+        // Match card to product by checking its name text
+        const nameEl = card.querySelector('.card-name');
+        if (!nameEl) return;
+        const product = PRODUCTS.find(p => p.name === nameEl.textContent);
+        if (!product || product.id !== productId) return;
+
+        const voted = hasVoted(productId);
+        const count = getVoteCount(productId);
+        badge.textContent = count;
+
+        if (voted && !card.classList.contains('voted')) {
+          card.classList.add('voted');
+          const check = document.createElement('div');
+          check.className = 'voted-check';
+          check.innerHTML = checkSvg;
+          card.prepend(check);
+        } else if (!voted && card.classList.contains('voted')) {
+          card.classList.remove('voted');
+          const check = card.querySelector('.voted-check');
+          if (check) check.remove();
+        }
+      });
     }
 
     function showToast(msg) {
